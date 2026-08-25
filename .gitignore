@@ -1,0 +1,22 @@
+target/
+.m2/
+.playwright-browsers/
+.idea/
+.vscode/
+*.iml
+
+# Evidencias produzidas pelos testes
+artifacts/
+reference-solutions/target/
+allure-results/
+allure-report/
+target/allure-results/
+playwright-report/
+screenshots/
+traces/
+videos/
+
+# Arquivos locais
+.env
+*.log
+*.zip
