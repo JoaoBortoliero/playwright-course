@@ -12,39 +12,40 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 
 class PrimeiroContatoPlaywrightTest {
 
-  private static final String BASE_URL =
-      System.getProperty("baseUrl", "https://www.saucedemo.com/");
+    private static final String BASE_URL =
+            System.getProperty("baseUrl", "https://www.saucedemo.com/");
 
-  @Test
-  @DisplayName("deve abrir a pagina inicial do SauceDemo")
-  void deveAbrirPaginaInicialDoSauceDemo() {
-    boolean headless = Boolean.parseBoolean(System.getProperty("headless", "true"));
-    String browserName = System.getProperty("browser", "chromium");
+    @Test
+    @DisplayName("deve abrir a pagina inicial do SauceDemo")
+    void deveAbrirPaginaInicialDoSauceDemo() {
 
-    try (Playwright playwright = Playwright.create()) {
-      Browser browser = browserType(playwright, browserName)
-          .launch(new BrowserType.LaunchOptions().setHeadless(headless));
-      BrowserContext context = browser.newContext();
+        try (Playwright playwright = Playwright.create()) {
 
-      try {
-        Page page = context.newPage();
-        page.navigate(BASE_URL);
-        assertThat(page).hasTitle("Swag Labs");
-      } finally {
-        context.close();
-        browser.close();
-      }
+            Browser browser = playwright.chromium().launch(
+                    new BrowserType.LaunchOptions()
+                            .setChannel("msedge")
+                            .setHeadless(false)
+            );
+            BrowserContext context = browser.newContext();
+            try {
+                Page page = context.newPage();
+                page.navigate(BASE_URL);
+                assertThat(page).hasTitle("Swag Labs");
+            } finally {
+                context.close();
+                browser.close();
+            }
+        }
     }
-  }
 
-  private BrowserType browserType(Playwright playwright, String browserName) {
-    return switch (browserName.toLowerCase()) {
-      case "chromium" -> playwright.chromium();
-      case "firefox" -> playwright.firefox();
-      case "webkit" -> playwright.webkit();
-      default -> throw new IllegalArgumentException(
-          "Browser nao suportado: " + browserName + ". Use chromium, firefox ou webkit.");
-    };
-  }
+    private BrowserType browserType(Playwright playwright, String browserName) {
+        return switch (browserName.toLowerCase()) {
+            case "chromium" -> playwright.chromium();
+            case "firefox" -> playwright.firefox();
+            case "webkit" -> playwright.webkit();
+            default -> throw new IllegalArgumentException(
+                    "Browser nao suportado: " + browserName + ". Use chromium, firefox ou webkit.");
+        };
+    }
 }
 

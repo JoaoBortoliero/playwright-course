@@ -1,10 +1,6 @@
 package br.com.curso.playwright.aula02;
 
-import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.Page;
-import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,7 +15,11 @@ class LocatorsEAutoWaitDemonstracaoTest {
   void deveResolverAmbiguidadeEAguardarResultado() {
     try (Playwright playwright = Playwright.create()) {
       playwright.selectors().setTestIdAttribute("data-test");
-      Browser browser = playwright.chromium().launch();
+      Browser browser = playwright.chromium().launch(
+              new BrowserType.LaunchOptions()
+                      .setChannel("msedge")
+                      .setHeadless(false)
+      );
       BrowserContext context = browser.newContext();
 
       try {

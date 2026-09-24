@@ -12,20 +12,28 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 @PlaywrightTest
 @Tag("demo-07")
 class ArquiteturaDemonstracao {
-  @Test void testeExpressaRegraEObjetoEncapsulaMecanica(Page page) {
-    page.setContent("<main><h1>Login</h1><label>Usuário <input></label><button>Entrar</button><p data-test='state'></p><script>document.querySelector('button').onclick=()=>document.querySelector('[data-test=state]').textContent='Autenticado'</script></main>");
-    LoginPanel login = new LoginPanel(page);
-    login.loginAs("student");
-    assertThat(login.state()).hasText("Autenticado");
-  }
-
-  private static final class LoginPanel {
-    private final Page page;
-    LoginPanel(Page page) { this.page = page; }
-    void loginAs(String user) {
-      page.getByLabel("Usuário").fill(user);
-      page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Entrar")).click();
+    @Test
+    void testeExpressaRegraEObjetoEncapsulaMecanica(Page page) {
+        page.setContent("<main><h1>Login</h1><label>Usuário <input></label><button>Entrar</button><p data-test='state'></p><script>document.querySelector('button').onclick=()=>document.querySelector('[data-test=state]').textContent='Autenticado'</script></main>");
+        LoginPanel login = new LoginPanel(page);
+        login.loginAs("student");
+        assertThat(login.state()).hasText("Autenticado");
     }
-    Locator state() { return page.getByTestId("state"); }
-  }
+
+    private static final class LoginPanel {
+        private final Page page;
+
+        LoginPanel(Page page) {
+            this.page = page;
+        }
+
+        void loginAs(String user) {
+            page.getByLabel("Usuário").fill(user);
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Entrar")).click();
+        }
+
+        Locator state() {
+            return page.getByTestId("state");
+        }
+    }
 }

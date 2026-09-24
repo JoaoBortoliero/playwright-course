@@ -21,8 +21,11 @@ class CheckoutEDinheiroDemonstracao {
   void deveLocalizarProdutoPeloDominioEObservarATransicao() {
     try (Playwright playwright = Playwright.create()) {
       playwright.selectors().setTestIdAttribute("data-test");
-      Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-          .setHeadless(Boolean.parseBoolean(System.getProperty("headless", "true"))));
+      Browser browser = playwright.chromium().launch(
+              new BrowserType.LaunchOptions()
+                      .setChannel("msedge")
+                      .setHeadless(false)
+      );
       BrowserContext context = browser.newContext();
       try {
         Page page = context.newPage();

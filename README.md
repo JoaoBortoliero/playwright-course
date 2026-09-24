@@ -11,8 +11,17 @@ Pré-requisitos: Java 17, Maven 3.9+ e PowerShell.
 
 Depois de clonar o repositório, entre na pasta do projeto e execute:
 
+Ambiente pessoal:
+
 ```powershell
 .\course.ps1 setup
+.\course.ps1 demo 01
+```
+
+Ambiente corporativo:
+
+```powershell
+.\course.ps1 setup -SkipBrowserInstall 
 .\course.ps1 demo 01
 ```
 
@@ -66,18 +75,18 @@ para comandos Maven livres.
 Propriedades `-D` têm precedência sobre variáveis de ambiente, que têm
 precedência sobre os padrões:
 
-| Propriedade | Variável | Padrão |
-|---|---|---|
-| `baseUrl` | `COURSE_BASE_URL` | `https://www.saucedemo.com/` |
-| `apiBaseUrl` | `COURSE_API_BASE_URL` | URL do laboratório |
-| `browser` | `COURSE_BROWSER` | `chromium` |
-| `headless` | `COURSE_HEADLESS` | `true` |
-| `timeout` | `COURSE_TIMEOUT` | `10000` |
-| `artifactsDir` | `COURSE_ARTIFACTS_DIR` | `artifacts` |
-| `trace` | `COURSE_TRACE` | `on-failure` |
-| `video` | `COURSE_VIDEO` | `off` |
-| `screenshot` | `COURSE_SCREENSHOT` | `on-failure` |
-| `tags` | `COURSE_TAGS` | vazio |
+| Propriedade    | Variável               | Padrão                       |
+|----------------|------------------------|------------------------------|
+| `baseUrl`      | `COURSE_BASE_URL`      | `https://www.saucedemo.com/` |
+| `apiBaseUrl`   | `COURSE_API_BASE_URL`  | URL do laboratório           |
+| `browser`      | `COURSE_BROWSER`       | `chromium`                   |
+| `headless`     | `COURSE_HEADLESS`      | `true`                       |
+| `timeout`      | `COURSE_TIMEOUT`       | `10000`                      |
+| `artifactsDir` | `COURSE_ARTIFACTS_DIR` | `artifacts`                  |
+| `trace`        | `COURSE_TRACE`         | `on-failure`                 |
+| `video`        | `COURSE_VIDEO`         | `off`                        |
+| `screenshot`   | `COURSE_SCREENSHOT`    | `on-failure`                 |
+| `tags`         | `COURSE_TAGS`          | vazio                        |
 
 ## Resultado esperado
 
