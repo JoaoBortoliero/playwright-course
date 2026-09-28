@@ -47,8 +47,11 @@ class LifecycleJUnitDemonstracaoTest {
 
   @AfterEach
   void fecharContexto() {
-    if (context != null) {
-      context.close();
+    try {
+      if (context != null) {
+        context.close();
+      }
+    } finally {
       context = null;
       page = null;
     }

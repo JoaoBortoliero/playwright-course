@@ -9,8 +9,7 @@ Ao terminar esta aula, voce devera conseguir:
 
 - explicar a hierarquia `Playwright -> Browser -> BrowserContext -> Page`;
 - abrir e fechar esses recursos na ordem correta;
-- navegar ate o SauceDemo em Chromium;
-- alternar entre execucao headless e headed;
+- navegar até o SauceDemo utilizando o Microsoft Edge instalado na máquina;
 - implementar um login simples sem `Thread.sleep`;
 - explicar por que Playwright nao usa o modelo tradicional de WebDriver.
 
@@ -42,14 +41,14 @@ caros poderao ser reutilizados com seguranca.
 
 ## 2. Selenium versus Playwright
 
-| Situacao | Selenium | Playwright |
-|---|---|---|
-| Processo principal | `WebDriver` | `Browser` |
-| Nova sessao isolada | Geralmente outro driver/perfil | Novo `BrowserContext` |
-| Nova aba | `WindowHandle` | `Page` |
-| Referencia ao elemento | `WebElement` | `Locator` reutilizavel |
-| Espera antes de agir | Frequentemente `WebDriverWait` | Auto-wait integrado as acoes |
-| Browsers suportados | Driver por browser | Binarios compativeis gerenciados pela ferramenta |
+| Situacao               | Selenium                       | Playwright                                                                                              |
+|------------------------|--------------------------------|---------------------------------------------------------------------------------------------------------|
+| Processo principal     | `WebDriver`                    | `Browser`                                                                                               |
+| Nova sessao isolada    | Geralmente outro driver/perfil | Novo `BrowserContext`                                                                                   |
+| Nova aba               | `WindowHandle`                 | `Page`                                                                                                  |
+| Referencia ao elemento | `WebElement`                   | `Locator` reutilizavel                                                                                  |
+| Espera antes de agir   | Frequentemente `WebDriverWait` | Auto-wait integrado as acoes                                                                            |
+| Browsers suportados    | Driver por browser             | Suporte a Chromium, Firefox e WebKit; neste curso será utilizado o Microsoft Edge instalado na máquina. |
 
 Auto-wait nao significa esperar qualquer regra de negocio. Significa que a acao
 como `click()` verifica condicoes de acionabilidade antes de interagir. Na Aula 2
@@ -79,9 +78,9 @@ substitui seu conteúdo.
 
 ```java
 page.getByRole(
-    AriaRole.BUTTON,
-    new Page.GetByRoleOptions().setName("Login"))
-    .click();
+        AriaRole.BUTTON,
+        new Page.GetByRoleOptions().
+        setName("Login")).click();
 ```
 
 Leia como: “clique no controle com papel de botão e nome Login”. Role não é a
@@ -132,17 +131,17 @@ Antes de executar, tente prever:
 3. O que aconteceria se o contexto nao fosse fechado?
 4. Em que linha o navegador passa a acessar uma aplicacao externa?
 
-Agora instale o Chromium e rode o teste:
+Agora rode o teste:
 
 ```powershell
-.\mvn-local.ps1 compile exec:java '-Dexec.mainClass=com.microsoft.playwright.CLI' '-Dexec.args=install chromium'
-.\mvn-local.ps1 test
+.\course.ps1 demo 01
 ```
 
-Repita visualmente:
+Por padrão, o teste abre o Microsoft Edge de forma visível.
+Para executar sem exibir o navegador:
 
 ```powershell
-.\mvn-local.ps1 test -Dheadless=false
+.\course.ps1 demo 01 -Headless
 ```
 
 Experimente tambem passar uma URL incorreta e observe a falha. Depois reverta a
@@ -162,8 +161,8 @@ Dados publicos exibidos pelo proprio SauceDemo:
 Passos esperados:
 
 1. remova `@Disabled`;
-2. crie `Playwright`, Chromium, contexto e pagina;
-3. navegue ate `https://www.saucedemo.com/`;
+2. crie Playwright, Browser, BrowserContext e Page, utilizando o Microsoft Edge instalado na máquina;
+3. navegue até `https://www.saucedemo.com/`;
 4. localize os campos pelo placeholder visivel;
 5. preencha usuario e senha;
 6. clique no botao de login pelo papel e nome acessivel;
@@ -213,7 +212,6 @@ strictness, mensagens de erro e assertions na Aula 2.
 
 ## Criterios para revisao
 
-- o teste passa em headless e headed;
 - nao existe espera fixa;
 - o locator comunica a intencao do elemento;
 - a verificacao usa uma assertion com espera integrada;

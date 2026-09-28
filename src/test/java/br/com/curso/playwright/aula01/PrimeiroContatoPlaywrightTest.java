@@ -24,7 +24,9 @@ class PrimeiroContatoPlaywrightTest {
             Browser browser = playwright.chromium().launch(
                     new BrowserType.LaunchOptions()
                             .setChannel("msedge")
-                            .setHeadless(false)
+                            .setHeadless(Boolean.parseBoolean(
+                                    System.getProperty("headless", "false")
+                            ))
             );
             BrowserContext context = browser.newContext();
             try {
@@ -38,14 +40,5 @@ class PrimeiroContatoPlaywrightTest {
         }
     }
 
-    private BrowserType browserType(Playwright playwright, String browserName) {
-        return switch (browserName.toLowerCase()) {
-            case "chromium" -> playwright.chromium();
-            case "firefox" -> playwright.firefox();
-            case "webkit" -> playwright.webkit();
-            default -> throw new IllegalArgumentException(
-                    "Browser nao suportado: " + browserName + ". Use chromium, firefox ou webkit.");
-        };
-    }
 }
 

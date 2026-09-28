@@ -1,4 +1,4 @@
-$courseRoot = $PSScriptRoot
+﻿$courseRoot = $PSScriptRoot
 $localRepository = Join-Path $courseRoot ".m2\repository"
 $browserDirectory = Join-Path $courseRoot ".playwright-browsers"
 $previousBrowserDirectory = $env:PLAYWRIGHT_BROWSERS_PATH
@@ -12,6 +12,7 @@ $mavenCandidates = @(
     "C:\maven\bin\mvn.cmd"
     "C:\apache-maven-3.9.10\bin\mvn.cmd"
 )
+
 $mavenExecutable = $mavenCandidates |
     Where-Object { $_ -and (Test-Path $_) } |
     Select-Object -First 1
@@ -22,13 +23,15 @@ if (-not $mavenExecutable) {
 
 try {
     $env:PLAYWRIGHT_BROWSERS_PATH = $browserDirectory
-    # Ensure arguments are strings (avoid System.Char elements)
+
     if ($args.Count -eq 0) {
         $mavenArguments = @("test")
     }
     else {
         $mavenArguments = @()
-        foreach ($a in $args) { $mavenArguments += [string]$a }
+        foreach ($a in $args) {
+            $mavenArguments += [string]$a
+        }
     }
 
     & $mavenExecutable "-Dmaven.repo.local=$localRepository" @mavenArguments

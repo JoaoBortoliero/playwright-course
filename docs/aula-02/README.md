@@ -20,18 +20,23 @@ Considere o fluxo minimo:
 
 ```java
 try (Playwright playwright = Playwright.create()) {
-  Browser browser = playwright.chromium().launch();
-  BrowserContext context = browser.newContext();
+    Browser browser = playwright.chromium().launch(
+            new BrowserType.LaunchOptions()
+                    .setChannel("msedge")
+                    .setHeadless(false)
+    );
+    BrowserContext context = browser.newContext();
 
-  try {
-    Page page = context.newPage();
-    page.navigate("https://www.saucedemo.com/");
-  } finally {
-    context.close();
-    browser.close();
-  }
+    try {
+        Page page = context.newPage();
+        page.navigate("https://www.saucedemo.com/");
+    } finally {
+        context.close();
+        browser.close();
+    }
 }
 ```
+Nos testes executáveis, o navegador e o modo headless são obtidos das propriedades enviadas pelo course.ps1.
 
 Leia de fora para dentro:
 
@@ -216,7 +221,7 @@ A demonstracao usa HTML local para manter o foco nos conceitos. Identifique:
 Execute somente a demonstracao:
 
 ```powershell
-.\mvn-local.ps1 -Dtest=LocatorsEAutoWaitDemonstracaoTest test
+.\course.ps1 demo 02
 ```
 
 ## 7. Exercicios no SauceDemo

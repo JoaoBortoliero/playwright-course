@@ -18,46 +18,76 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Tag("solution-03")
 class Aula03SolutionTest {
-  private Playwright playwright;
-  private Browser browser;
-  private BrowserContext context;
-  private Page page;
 
-  @BeforeAll void openBrowser() {
-    playwright = Playwright.create();
-    playwright.selectors().setTestIdAttribute("data-test");
-    browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-        .setHeadless(Boolean.parseBoolean(System.getProperty("headless", "true"))));
-  }
+    private Playwright playwright;
+    private Browser browser;
+    private BrowserContext context;
+    private Page page;
 
-  @BeforeEach void newIsolatedPage() {
-    context = browser.newContext(new Browser.NewContextOptions()
-        .setBaseURL(System.getProperty("baseUrl", "https://www.saucedemo.com/")));
-    page = context.newPage();
-  }
+    @BeforeAll
+    void openBrowser() {
+        playwright = Playwright.create();
+        playwright.selectors().setTestIdAttribute("data-test");
+        browser = playwright.chromium().launch(
+                new BrowserType.LaunchOptions()
+                        .setChannel("msedge")
+                        .setHeadless(Boolean.parseBoolean(
+                                System.getProperty("headless", "false"))));
+    }
 
-  @AfterEach void closeContext() { if (context != null) context.close(); }
-  @AfterAll void closeBrowser() { if (browser != null) browser.close(); if (playwright != null) playwright.close(); }
+    @BeforeEach
+    void newIsolatedPage() {
+        context = browser.newContext(
+                new Browser.NewContextOptions()
+                        .setBaseURL(System.getProperty(
+                                "baseUrl",
+                                "https://www.saucedemo.com/")));
+        page = context.newPage();
+    }
 
-  @Test void validLogin() {
-    login("standard_user");
-    assertThat(page.getByTestId("title")).hasText("Products");
-  }
+    @AfterEach
+    void closeContext() {
+        if (context != null) {
+            context.close();
+            context = null;
+            page = null;
+        }
+    }
 
-  @Test void lockedUser() {
-    login("locked_out_user");
-    assertThat(page.getByTestId("error")).containsText("locked out");
-  }
+    @AfterAll
+    void closeBrowser() {
+        if (browser != null) {
+            browser.close();
+            browser = null;
+        }
+        if (playwright != null) {
+            playwright.close();
+            playwright = null;
+        }
+    }
 
-  @Test void cleanSession() {
-    page.navigate("/");
-    assertThat(page.getByTestId("login-button")).isVisible();
-  }
+    @Test
+    void validLogin() {
+        login("standard_user");
+        assertThat(page.getByTestId("title")).hasText("Products");
+    }
 
-  private void login(String user) {
-    page.navigate("/");
-    page.getByPlaceholder("Username").fill(user);
-    page.getByPlaceholder("Password").fill("secret_sauce");
-    page.getByTestId("login-button").click();
-  }
+    @Test
+    void lockedUser() {
+        login("locked_out_user");
+        assertThat(page.getByTestId("error")).containsText("locked out");
+    }
+
+    @Test
+    void cleanSession() {
+        page.navigate("/");
+        assertThat(page.getByTestId("login-button")).isVisible();
+    }
+
+    private void login(String user) {
+        page.navigate("/");
+        page.getByPlaceholder("Username").fill(user);
+        page.getByPlaceholder("Password").fill("secret_sauce");
+        page.getByTestId("login-button").click();
+    }
 }

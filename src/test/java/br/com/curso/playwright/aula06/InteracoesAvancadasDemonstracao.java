@@ -11,6 +11,7 @@ import com.microsoft.playwright.FrameLocator;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.assertions.PlaywrightAssertions;
 import com.microsoft.playwright.options.AriaRole;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -32,87 +33,141 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Tag("demo-06")
 class InteracoesAvancadasDemonstracao {
-  private Playwright playwright;
-  private Browser browser;
-  private BrowserContext context;
-  private Page page;
 
-  @BeforeAll
-  void iniciarBrowser() {
-    TestConfig config = TestConfig.fromSystemProperties();
-    playwright = Playwright.create();
-    playwright.selectors().setTestIdAttribute("data-test");
-    browser = BrowserFactory.launch(playwright, config);
-  }
+    private TestConfig config;
+    private Playwright playwright;
+    private Browser browser;
+    private BrowserContext context;
+    private Page page;
 
-  @BeforeEach
-  void abrirLaboratorio(CourseLabServer lab) {
-    context = browser.newContext();
-    page = context.newPage();
-    page.navigate(lab.baseUrl() + "/interactions");
-  }
-
-  @AfterEach
-  void fecharContexto() {
-    if (context != null) context.close();
-  }
-
-  @AfterAll
-  void fecharBrowser() {
-    if (browser != null) browser.close();
-    if (playwright != null) playwright.close();
-  }
-
-  @Test
-  void deveFazerUploadEDownload() throws Exception {
-    Path upload = Files.createTempFile("curso-playwright-", ".txt");
-    Path destino = Files.createTempFile("curso-download-", ".txt");
-    try {
-      Files.writeString(upload, "conteúdo de teste");
-      page.getByLabel("Arquivo").setInputFiles(upload);
-      assertThat(page.getByTestId("file-name")).hasText(upload.getFileName().toString());
-
-      Download download = page.waitForDownload(() -> page.getByRole(AriaRole.LINK,
-          new Page.GetByRoleOptions().setName("Baixar relatório")).click());
-      assertEquals("report.txt", download.suggestedFilename());
-      download.saveAs(destino);
-      assertEquals("relatório determinístico\n", Files.readString(destino));
-    } finally {
-      Files.deleteIfExists(upload);
-      Files.deleteIfExists(destino);
+    @BeforeAll
+    void iniciarBrowser() {
+        config = TestConfig.fromSystemProperties();
+        playwright = Playwright.create();
+        playwright.selectors().setTestIdAttribute("data-test");
+        PlaywrightAssertions.setDefaultAssertionTimeout(config.timeoutMs());
+        browser = BrowserFactory.launch(playwright, config);
     }
-  }
 
-  @Test
-  void deveObservarDialogoEPopupAntesDosCliques() {
-    AtomicReference<String> mensagem = new AtomicReference<>();
-    page.onceDialog(dialog -> {
-      mensagem.set(dialog.message());
-      dialog.accept();
-    });
-    page.getByRole(AriaRole.BUTTON,
-        new Page.GetByRoleOptions().setName("Abrir diálogo")).click();
-    assertEquals("Confirmação do laboratório", mensagem.get());
+    @BeforeEach
+    void abrirLaboratorio(CourseLabServer lab) {
+        context = browser.newContext();
+        context.setDefaultTimeout(config.timeoutMs());
+        context.setDefaultNavigationTimeout(config.timeoutMs());
+        page = context.newPage();
+        page.navigate(lab.baseUrl() + "/interactions");
+    }
 
-    Page popup = page.waitForPopup(() -> page.getByRole(AriaRole.BUTTON,
-        new Page.GetByRoleOptions().setName("Abrir popup")).click());
-    assertThat(popup.getByTestId("popup-status")).hasText("Popup carregado");
-  }
+    @AfterEach
+    void fecharContexto() {
+        try {
+            if (context != null) {
+                context.close();
+            }
+        } finally {
+            context = null;
+            page = null;
+        }
+    }
 
-  @Test
-  void deveUsarEscopoDoFrameTecladoEAssertionComRetry() {
-    FrameLocator frame = page.frameLocator("iframe[title='Área incorporada']");
-    Locator confirmar = frame.getByRole(AriaRole.BUTTON,
-        new FrameLocator.GetByRoleOptions().setName("Confirmar"));
-    confirmar.click();
-    assertThat(frame.getByRole(AriaRole.BUTTON,
-        new FrameLocator.GetByRoleOptions().setName("Concluído"))).isVisible();
+    @AfterAll
+    void fecharBrowser() {
+        try {
+            if (browser != null) {
+                browser.close();
+            }
+        } finally {
+            browser = null;
 
-    page.getByLabel("Atalho").press("Enter");
-    assertThat(page.getByTestId("key")).hasText("Enter recebido");
+            if (playwright != null) {
+                playwright.close();
+                playwright = null;
+            }
+        }
+    }
 
-    page.getByRole(AriaRole.BUTTON,
-        new Page.GetByRoleOptions().setName("Carregar")).click();
-    assertThat(page.getByTestId("delayed")).hasText("Conteúdo pronto");
-  }
+    @Test
+    void deveFazerUploadEDownload() throws Exception {
+        Path upload = Files.createTempFile("curso-playwright-", ".txt");
+        Path destino = Files.createTempFile("curso-download-", ".txt");
+
+        try {
+            Files.writeString(upload, "conteudo de teste");
+            page.getByLabel("Arquivo").setInputFiles(upload);
+
+            assertThat(page.getByTestId("file-name"))
+                    .hasText(upload.getFileName().toString());
+
+            Download download = page.waitForDownload(() ->
+                    page.getByRole(
+                                    AriaRole.LINK,
+                                    new Page.GetByRoleOptions()
+                                            .setName("Baixar relatório"))
+                            .click());
+
+            assertEquals("report.txt", download.suggestedFilename());
+            download.saveAs(destino);
+            assertEquals("relatório determinístico\n", Files.readString(destino));
+        } finally {
+            Files.deleteIfExists(upload);
+            Files.deleteIfExists(destino);
+        }
+    }
+
+    @Test
+    void deveObservarDialogoEPopupAntesDosCliques() {
+        AtomicReference<String> mensagem = new AtomicReference<>();
+
+        page.onceDialog(dialog -> {
+            mensagem.set(dialog.message());
+            dialog.accept();
+        });
+
+        page.getByRole(
+                        AriaRole.BUTTON,
+                        new Page.GetByRoleOptions().setName("Abrir diálogo"))
+                .click();
+
+        assertEquals("Confirmação do laboratório", mensagem.get());
+
+        Page popup = page.waitForPopup(() ->
+                page.getByRole(
+                                AriaRole.BUTTON,
+                                new Page.GetByRoleOptions().setName("Abrir popup"))
+                        .click());
+
+        try {
+            assertThat(popup.getByTestId("popup-status"))
+                    .hasText("Popup carregado");
+        } finally {
+            popup.close();
+        }
+    }
+
+    @Test
+    void deveUsarEscopoDoFrameTecladoEAssertionComRetry() {
+        FrameLocator frame = page.frameLocator(
+                "iframe[title='Área incorporada']");
+
+        Locator confirmar = frame.getByRole(
+                AriaRole.BUTTON,
+                new FrameLocator.GetByRoleOptions().setName("Confirmar"));
+
+        confirmar.click();
+
+        assertThat(frame.getByRole(
+                        AriaRole.BUTTON,
+                        new FrameLocator.GetByRoleOptions().setName("Concluído")))
+                .isVisible();
+
+        page.getByLabel("Atalho").press("Enter");
+        assertThat(page.getByTestId("key")).hasText("Enter recebido");
+
+        page.getByRole(
+                        AriaRole.BUTTON,
+                        new Page.GetByRoleOptions().setName("Carregar"))
+                .click();
+
+        assertThat(page.getByTestId("delayed")).hasText("Conteúdo pronto");
+    }
 }

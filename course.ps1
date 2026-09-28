@@ -1,25 +1,35 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("setup", "demo", "exercise", "validate", "solution", "validate-all", "help")]
+    [ValidateSet("setup", "demo", "exercise", "validate", "solution", "validate-all", "trace", "help")]
     [string]$Action = "help",
 
     [Parameter(Position = 1)]
     [ValidatePattern("^(0[1-9]|1[0-2])$")]
     [string]$Module,
 
-    [switch]$Headed,
+    [switch]$Headless,
 
-    [ValidateSet("chromium", "firefox", "webkit")]
-    [string]$Browser = "chromium",
+    [string]$Groups,
 
-    [switch]$SkipBrowserInstall
+    [switch]$Parallel,
+
+    [ValidateSet("off", "on-failure", "always")]
+    [string]$Trace = "on-failure",
+
+    [ValidateSet("off", "on-failure", "always")]
+    [string]$Screenshot = "on-failure",
+
+    [ValidateSet("off", "on-failure", "always")]
+    [string]$Video = "off",
+
+    [string]$TracePath
 )
 
 $courseRoot = $PSScriptRoot
 $maven = Join-Path $courseRoot "mvn-local.ps1"
 $env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
-Write-Host "Download automático de navegadores: desabilitado"
+Write-Host "Download automatico de navegadores: desabilitado"
 
 function Invoke-CourseMaven {
     param(
@@ -28,10 +38,8 @@ function Invoke-CourseMaven {
     )
 
     Push-Location $Project
-
     try {
         & $maven @Arguments
-
         if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
         }
@@ -43,7 +51,7 @@ function Invoke-CourseMaven {
 
 function Require-Module {
     if (-not $Module) {
-        throw "Informe a aula com dois dígitos. Exemplo: .\course.ps1 demo 04"
+        throw "Informe a aula com dois digitos. Exemplo: .\course.ps1 demo 04"
     }
 }
 
@@ -81,57 +89,62 @@ function Exercise-Class([string]$Number) {
     }[$Number]
 }
 
-$headless = "false"
+$headlessValue = if ($Headless.IsPresent) { "true" } else { "false" }
+$parallelValue = if ($Parallel.IsPresent) { "true" } else { "false" }
+
+function New-TestArguments {
+    param(
+        [string]$TestClass,
+        [switch]$IncludeGroups
+    )
+
+    $arguments = @(
+        "test",
+        "-Dtest=$TestClass",
+        "-Dheadless=$headlessValue",
+        "-Djunit.jupiter.execution.parallel.enabled=$parallelValue",
+        "-Dtrace=$Trace",
+        "-Dscreenshot=$Screenshot",
+        "-Dvideo=$Video"
+    )
+
+    if ($IncludeGroups.IsPresent -and $Groups) {
+        $arguments += "-Dgroups=$Groups"
+    }
+
+    return $arguments
+}
 
 switch ($Action) {
-
     "setup" {
-
         java -version
-
         if ($LASTEXITCODE -ne 0) {
-            throw "Java 17 não foi encontrado."
+            throw "Java nao foi encontrado."
         }
 
         Invoke-CourseMaven @("-version")
-
         Write-Host ""
         Write-Host "Download dos navegadores Playwright desabilitado."
-        Write-Host "Os testes utilizarão o navegador instalado na máquina."
+        Write-Host "Os testes utilizarao o Microsoft Edge instalado na maquina."
         Write-Host ""
     }
 
     "demo" {
         Require-Module
-
-        Invoke-CourseMaven @(
-            "test",
-            "-Dtest=$(Demo-Class $Module)",
-            "-Dbrowser=$Browser",
-            "-Dheadless=$headless"
-        )
+        $arguments = New-TestArguments -TestClass (Demo-Class $Module) -IncludeGroups
+        Invoke-CourseMaven $arguments
     }
 
     "exercise" {
         Require-Module
-
-        Invoke-CourseMaven @(
-            "test",
-            "-Dtest=$(Exercise-Class $Module)",
-            "-Dbrowser=$Browser",
-            "-Dheadless=$headless"
-        )
+        $arguments = New-TestArguments -TestClass (Exercise-Class $Module) -IncludeGroups
+        Invoke-CourseMaven $arguments
     }
 
     "validate" {
         Require-Module
-
-        Invoke-CourseMaven @(
-            "test",
-            "-Dtest=$(Exercise-Class $Module)",
-            "-Dbrowser=$Browser",
-            "-Dheadless=$headless"
-        )
+        $arguments = New-TestArguments -TestClass (Exercise-Class $Module) -IncludeGroups
+        Invoke-CourseMaven $arguments
 
         Invoke-CourseMaven @(
             "test",
@@ -140,36 +153,28 @@ switch ($Action) {
         )
 
         if ([int]$Module -ge 7) {
-            Invoke-CourseMaven @(
-                "test",
-                "-Dtest=ArchitectureValidator"
-            )
+            Invoke-CourseMaven @("test", "-Dtest=ArchitectureValidator")
         }
     }
 
     "solution" {
         Require-Module
-
         Invoke-CourseMaven @(
             "test",
             "-Dgroups=solution-$Module",
-            "-Dbrowser=$Browser",
-            "-Dheadless=$headless"
+            "-Dheadless=$headlessValue",
+            "-Djunit.jupiter.execution.parallel.enabled=$parallelValue",
+            "-Dtrace=$Trace",
+            "-Dscreenshot=$Screenshot",
+            "-Dvideo=$Video"
         ) (Join-Path $courseRoot "reference-solutions")
     }
 
     "validate-all" {
-
         foreach ($number in 1..12) {
-
             $selected = $number.ToString("00")
-
-            Invoke-CourseMaven @(
-                "test",
-                "-Dtest=$(Exercise-Class $selected)",
-                "-Dbrowser=$Browser",
-                "-Dheadless=$headless"
-            )
+            $arguments = New-TestArguments -TestClass (Exercise-Class $selected)
+            Invoke-CourseMaven $arguments
 
             Invoke-CourseMaven @(
                 "test",
@@ -178,9 +183,19 @@ switch ($Action) {
             )
         }
 
+        Invoke-CourseMaven @("test", "-Dtest=ArchitectureValidator")
+    }
+
+    "trace" {
+        if (-not $TracePath) {
+            throw "Informe o arquivo com -TracePath. Exemplo: .\course.ps1 trace -TracePath artifacts\trace.zip"
+        }
+
+        $resolvedTrace = Resolve-Path $TracePath -ErrorAction Stop
         Invoke-CourseMaven @(
-            "test",
-            "-Dtest=ArchitectureValidator"
+            "exec:java",
+            "-Dexec.mainClass=com.microsoft.playwright.CLI",
+            "-Dexec.args=show-trace $resolvedTrace"
         )
     }
 
@@ -188,12 +203,13 @@ switch ($Action) {
         Write-Host "Curso Playwright Java"
         Write-Host ""
         Write-Host ".\course.ps1 setup"
-        Write-Host ".\course.ps1 setup -SkipBrowserInstall"
-        Write-Host ".\course.ps1 demo 04 [-Headed] [-Browser firefox]"
-        Write-Host ".\course.ps1 exercise 04"
-        Write-Host ".\course.ps1 validate 04"
-        Write-Host ".\course.ps1 solution 04"
-        Write-Host ".\course.ps1 validate-all"
+        Write-Host ".\course.ps1 demo 04 [-Headless] [-Groups smoke] [-Parallel]"
+        Write-Host ".\course.ps1 exercise 04 [-Headless] [-Groups smoke] [-Parallel]"
+        Write-Host ".\course.ps1 validate 04 [-Headless] [-Groups smoke] [-Parallel]"
+        Write-Host ".\course.ps1 solution 04 [-Headless] [-Parallel]"
+        Write-Host ".\course.ps1 validate-all [-Headless] [-Parallel]"
+        Write-Host ".\course.ps1 demo 11 [-Trace always] [-Screenshot always] [-Video always]"
+        Write-Host ".\course.ps1 trace -TracePath artifacts\trace.zip"
         Write-Host ""
     }
 }

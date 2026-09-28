@@ -11,26 +11,36 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled("Aula 9: remova após separar integração real, mock e falha de rede")
+@Disabled("Aula 9: remova apos separar integracao real, mock e falha de rede")
 @PlaywrightTest
 @ExtendWith(CourseLabExtension.class)
 @Tag("exercise-09")
 class RedeEMockingExercicioTest {
-  @Test
-  void deveObservarRespostaReal(Page page, CourseLabServer lab) {
-    // TODO: listener + waitForResponse específico + status + consequência na UI.
-    fail("Implemente a observação real");
-  }
 
-  @Test
-  void deveCumprirContratoComMock(Page page, CourseLabServer lab) {
-    // TODO: registre route/fulfill antes da ação e deixe o mock explícito no teste.
-    fail("Implemente o contrato simulado");
-  }
+    @Test
+    void deveObservarRespostaReal(Page page, CourseLabServer lab) {
+        // TODO:
+        // 1. registre os requests;
+        // 2. espere a resposta GET /api/items;
+        // 3. valide status, metodo, URL e consequencia na UI.
+        fail("Implemente a observacao real");
+    }
 
-  @Test
-  void deveTratarFalhaDeRede(Page page, CourseLabServer lab) {
-    // TODO: route/abort + estado da UI; depois capture um page error controlado.
-    fail("Implemente a falha de transporte");
-  }
+    @Test
+    void deveCumprirContratoComMock(Page page, CourseLabServer lab) {
+        // TODO:
+        // 1. registre route/fulfill antes da acao;
+        // 2. responda um payload controlado;
+        // 3. valide a consequencia na UI.
+        fail("Implemente o contrato simulado");
+    }
+
+    @Test
+    void deveTratarFalhaDeRede(Page page, CourseLabServer lab) {
+        // TODO:
+        // 1. utilize route/abort e valide o estado da UI;
+        // 2. crie uma pagina local com setContent;
+        // 3. capture e valide um page error controlado.
+        fail("Implemente a falha de transporte");
+    }
 }

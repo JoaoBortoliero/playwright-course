@@ -7,39 +7,87 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 
 final class ReferenceSession implements AutoCloseable {
-  final Playwright playwright;
-  final Browser browser;
-  final BrowserContext context;
-  final Page page;
 
-  ReferenceSession() { this(System.getProperty("baseUrl", "https://www.saucedemo.com/")); }
+    final Playwright playwright;
+    final Browser browser;
+    final BrowserContext context;
+    final Page page;
 
-  ReferenceSession(String baseUrl) {
-    playwright = Playwright.create();
-    playwright.selectors().setTestIdAttribute("data-test");
-    String browserName = System.getProperty("browser", "chromium");
-    BrowserType type = switch (browserName) {
-      case "firefox" -> playwright.firefox();
-      case "webkit" -> playwright.webkit();
-      default -> playwright.chromium();
-    };
-    browser = type.launch(new BrowserType.LaunchOptions().setHeadless(
-        Boolean.parseBoolean(System.getProperty("headless", "true"))));
-    context = browser.newContext(new Browser.NewContextOptions().setBaseURL(baseUrl));
-    context.setDefaultTimeout(10_000);
-    page = context.newPage();
-  }
+    ReferenceSession() {
+        this(System.getProperty("baseUrl", "https://www.saucedemo.com/"));
+    }
 
-  void login(String username) {
-    page.navigate("/");
-    page.getByPlaceholder("Username").fill(username);
-    page.getByPlaceholder("Password").fill("secret_sauce");
-    page.getByTestId("login-button").click();
-  }
+    ReferenceSession(String baseUrl) {
+        Playwright createdPlaywright = Playwright.create();
+        Browser createdBrowser = null;
+        BrowserContext createdContext = null;
 
-  @Override public void close() {
-    context.close();
-    browser.close();
-    playwright.close();
-  }
+        try {
+            createdPlaywright.selectors().setTestIdAttribute("data-test");
+            createdBrowser = createdPlaywright.chromium().launch(
+                    new BrowserType.LaunchOptions()
+                            .setChannel("msedge")
+                            .setHeadless(Boolean.parseBoolean(
+                                    System.getProperty("headless", "false"))));
+            createdContext = createdBrowser.newContext(
+                    new Browser.NewContextOptions().setBaseURL(baseUrl));
+            createdContext.setDefaultTimeout(10_000);
+
+            playwright = createdPlaywright;
+            browser = createdBrowser;
+            context = createdContext;
+            page = createdContext.newPage();
+        } catch (RuntimeException error) {
+            if (createdContext != null) {
+                try {
+                    createdContext.close();
+                } catch (RuntimeException closeError) {
+                    error.addSuppressed(closeError);
+                }
+            }
+            if (createdBrowser != null) {
+                try {
+                    createdBrowser.close();
+                } catch (RuntimeException closeError) {
+                    error.addSuppressed(closeError);
+                }
+            }
+            try {
+                createdPlaywright.close();
+            } catch (RuntimeException closeError) {
+                error.addSuppressed(closeError);
+            }
+            throw error;
+        }
+    }
+
+    void login(String username) {
+        page.navigate("/");
+        page.getByPlaceholder("Username").fill(username);
+        page.getByPlaceholder("Password").fill("secret_sauce");
+        page.getByTestId("login-button").click();
+    }
+
+    @Override
+    public void close() {
+        RuntimeException failure = null;
+        try {
+            context.close();
+        } catch (RuntimeException error) {
+            failure = error;
+        }
+        try {
+            browser.close();
+        } catch (RuntimeException error) {
+            if (failure == null) failure = error;
+            else failure.addSuppressed(error);
+        }
+        try {
+            playwright.close();
+        } catch (RuntimeException error) {
+            if (failure == null) failure = error;
+            else failure.addSuppressed(error);
+        }
+        if (failure != null) throw failure;
+    }
 }

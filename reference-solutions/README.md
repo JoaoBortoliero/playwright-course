@@ -1,20 +1,21 @@
-# Soluções de referência
+# Solucoes de referencia
 
-Este é um projeto Maven independente. Ele não participa do build do aluno e o
-script do curso nunca copia seus arquivos. Execute somente após sua tentativa:
+Este e um projeto Maven independente. Ele nao participa do build do aluno e seus arquivos nao sao copiados para o projeto principal.
+
+Execute uma solucao somente depois da sua tentativa:
 
 ```powershell
 .\course.ps1 solution 04
 ```
 
-As soluções mostram uma implementação defensável, não a única implementação
-aceita. Compare primeiro: fronteiras de responsabilidade, locators, oráculos,
-isolamento e teardown. Os comentários `Decisão` registram o motivo dos pontos
-que normalmente geram alternativas.
+As solucoes mostram uma implementacao defensavel, nao a unica implementacao aceita. Compare responsabilidades, locators, oraculos, isolamento e teardown.
 
-Alguns gabaritos usam `ReferenceSession` apenas para evitar a repetição do
-bootstrap. A implementação explícita do lifecycle continua disponível na
-solução da Aula 3; o helper não é uma API que o aluno precise conhecer antes.
+Alguns gabaritos usam `ReferenceSession` para evitar repeticao do bootstrap. A solucao da Aula 3 preserva o lifecycle explicito para fins didaticos.
 
-As Aulas 1–5 e 7/12 usam SauceDemo. As Aulas 6, 8–11 usam HTML/API locais para
-serem determinísticas. Credenciais presentes são as públicas do SauceDemo.
+Todas as solucoes com interface grafica utilizam exclusivamente o Microsoft Edge instalado na maquina. A execucao e visivel por padrao e pode ser feita sem interface com:
+
+```powershell
+.\course.ps1 solution 04 -Headless
+```
+
+As Aulas 1 a 5, 7 e 12 usam SauceDemo. As Aulas 6 e 8 a 11 usam HTML e API locais para manter os cenarios deterministicos. As credenciais presentes sao as credenciais publicas exibidas pelo SauceDemo.

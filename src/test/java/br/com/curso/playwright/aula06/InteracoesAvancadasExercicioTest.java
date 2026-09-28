@@ -8,6 +8,7 @@ import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.assertions.PlaywrightAssertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -20,64 +21,91 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled("Aula 6: remova quando os testes de interação estiverem implementados")
+@Disabled("Aula 6: remova quando os testes de interacao estiverem implementados")
 @ExtendWith(CourseLabExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Tag("exercise-06")
 class InteracoesAvancadasExercicioTest {
-  private Playwright playwright;
-  private Browser browser;
-  private BrowserContext context;
-  private Page page;
 
-  @BeforeAll
-  void iniciarBrowser() {
-    TestConfig config = TestConfig.fromSystemProperties();
-    playwright = Playwright.create();
-    playwright.selectors().setTestIdAttribute("data-test");
-    browser = BrowserFactory.launch(playwright, config);
-  }
+    private TestConfig config;
+    private Playwright playwright;
+    private Browser browser;
+    private BrowserContext context;
+    private Page page;
 
-  @BeforeEach
-  void abrirLaboratorio(CourseLabServer lab) {
-    context = browser.newContext();
-    page = context.newPage();
-    page.navigate(lab.baseUrl() + "/interactions");
-  }
+    @BeforeAll
+    void iniciarBrowser() {
+        config = TestConfig.fromSystemProperties();
+        playwright = Playwright.create();
+        playwright.selectors().setTestIdAttribute("data-test");
+        PlaywrightAssertions.setDefaultAssertionTimeout(config.timeoutMs());
+        browser = BrowserFactory.launch(playwright, config);
+    }
 
-  @AfterEach
-  void fecharContexto() {
-    if (context != null) context.close();
-  }
+    @BeforeEach
+    void abrirLaboratorio(CourseLabServer lab) {
+        context = browser.newContext();
+        context.setDefaultTimeout(config.timeoutMs());
+        context.setDefaultNavigationTimeout(config.timeoutMs());
+        page = context.newPage();
+        page.navigate(lab.baseUrl() + "/interactions");
+    }
 
-  @AfterAll
-  void fecharBrowser() {
-    if (browser != null) browser.close();
-    if (playwright != null) playwright.close();
-  }
+    @AfterEach
+    void fecharContexto() {
+        try {
+            if (context != null) {
+                context.close();
+            }
+        } finally {
+            context = null;
+            page = null;
+        }
+    }
 
-  @Test void deveEnviarArquivo() {
-    // TODO: Files.createTempFile + setInputFiles + assertion + cleanup.
-    fail("Implemente upload");
-  }
+    @AfterAll
+    void fecharBrowser() {
+        try {
+            if (browser != null) {
+                browser.close();
+            }
+        } finally {
+            browser = null;
 
-  @Test void deveBaixarEValidarRelatorio() {
-    // TODO: waitForDownload antes do clique, saveAs e conteúdo.
-    fail("Implemente download");
-  }
+            if (playwright != null) {
+                playwright.close();
+                playwright = null;
+            }
+        }
+    }
 
-  @Test void deveAceitarDialogo() {
-    // TODO: onceDialog, mensagem e accept.
-    fail("Implemente diálogo");
-  }
+    @Test
+    void deveEnviarArquivo() {
+        // TODO: Files.createTempFile, setInputFiles, assertion e cleanup.
+        fail("Implemente upload");
+    }
 
-  @Test void deveCapturarPopup() {
-    // TODO: waitForPopup e assertion na Page retornada.
-    fail("Implemente popup");
-  }
+    @Test
+    void deveBaixarEValidarRelatorio() {
+        // TODO: waitForDownload antes do clique, saveAs e validacao do conteudo.
+        fail("Implemente download");
+    }
 
-  @Test void deveUsarFrameTecladoEAutoRetry() {
-    // TODO: frameLocator, press Enter e conteúdo delayed sem sleep.
-    fail("Implemente frame, teclado e conteúdo atrasado");
-  }
+    @Test
+    void deveAceitarDialogo() {
+        // TODO: onceDialog, captura da mensagem e accept.
+        fail("Implemente dialogo");
+    }
+
+    @Test
+    void deveCapturarPopup() {
+        // TODO: waitForPopup e assertion na Page retornada.
+        fail("Implemente popup");
+    }
+
+    @Test
+    void deveUsarFrameTecladoEAutoRetry() {
+        // TODO: FrameLocator, press Enter e conteudo atrasado sem espera fixa.
+        fail("Implemente frame, teclado e conteudo atrasado");
+    }
 }

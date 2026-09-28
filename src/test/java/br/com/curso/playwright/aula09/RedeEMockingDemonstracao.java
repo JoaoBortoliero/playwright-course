@@ -22,51 +22,80 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(CourseLabExtension.class)
 @Tag("demo-09")
 class RedeEMockingDemonstracao {
-  @Test
-  void deveSincronizarComRespostaEValidarUi(Page page, CourseLabServer lab) {
-    List<String> requests = new CopyOnWriteArrayList<>();
-    page.onRequest(request -> requests.add(request.method() + " " + request.url()));
-    page.navigate(lab.baseUrl() + "/network");
 
-    Response response = page.waitForResponse(
-        candidate -> candidate.url().endsWith("/api/items")
-            && candidate.request().method().equals("GET"),
-        () -> page.getByRole(AriaRole.BUTTON,
-            new Page.GetByRoleOptions().setName("Carregar itens")).click());
+    @Test
+    void deveSincronizarComRespostaEValidarUi(Page page, CourseLabServer lab) {
+        List<String> requests = new CopyOnWriteArrayList<>();
+        page.onRequest(request ->
+                requests.add(request.method() + " " + request.url()));
 
-    assertEquals(200, response.status());
-    assertThat(page.getByTestId("result")).containsText("Backpack");
-    assertTrue(requests.stream().anyMatch(value -> value.endsWith("/api/items")));
-  }
+        page.navigate(lab.baseUrl() + "/network");
 
-  @Test
-  void deveSimularContratoVazioSemAtingirAServerApi(Page page, CourseLabServer lab) {
-    page.route("**/api/items", route -> route.fulfill(new Route.FulfillOptions()
-        .setStatus(200).setContentType("application/json").setBody("[]")));
-    page.navigate(lab.baseUrl() + "/network");
-    page.getByRole(AriaRole.BUTTON,
-        new Page.GetByRoleOptions().setName("Carregar itens")).click();
-    assertThat(page.getByTestId("result")).hasText("items:[]");
-  }
+        Response response = page.waitForResponse(
+                candidate -> candidate.url().endsWith("/api/items")
+                        && candidate.request().method().equals("GET"),
+                () -> page.getByRole(
+                        AriaRole.BUTTON,
+                        new Page.GetByRoleOptions().setName("Carregar itens"))
+                        .click());
 
-  @Test
-  void deveTratarFalhaDeTransporteEColetarPageError(Page page, CourseLabServer lab) {
-    page.route("**/api/blocked", route -> route.abort());
-    page.navigate(lab.baseUrl() + "/network");
-    page.getByRole(AriaRole.BUTTON,
-        new Page.GetByRoleOptions().setName("Requisição bloqueável")).click();
-    assertThat(page.getByTestId("result")).hasText("blocked:erro");
+        assertEquals(200, response.status());
+        assertThat(page.getByTestId("result")).containsText("Backpack");
+        assertTrue(requests.stream().anyMatch(value ->
+                value.startsWith("GET ") && value.endsWith("/api/items")));
+    }
 
-    List<String> errors = new CopyOnWriteArrayList<>();
-    page.onPageError(errors::add);
-    page.setContent("""
-        <button onclick="setTimeout(() => {
-          document.querySelector('p').textContent='executado';
-          throw new Error('falha controlada');
-        }, 0)">Executar</button><p data-test="state"></p>
-        """);
-    page.getByText("Executar").click();
-    assertThat(page.getByTestId("state")).hasText("executado");
-    assertTrue(errors.stream().anyMatch(value -> value.contains("falha controlada")));
-  }
+    @Test
+    void deveSimularContratoVazioSemAtingirApiDoServidor(
+            Page page,
+            CourseLabServer lab) {
+
+        page.route("**/api/items", route ->
+                route.fulfill(new Route.FulfillOptions()
+                        .setStatus(200)
+                        .setContentType("application/json")
+                        .setBody("[]")));
+
+        page.navigate(lab.baseUrl() + "/network");
+        page.getByRole(
+                AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName("Carregar itens"))
+                .click();
+
+        assertThat(page.getByTestId("result")).hasText("items:[]");
+    }
+
+    @Test
+    void deveTratarFalhaDeTransporteEColetarPageError(
+            Page page,
+            CourseLabServer lab) {
+
+        page.route("**/api/blocked", route -> route.abort());
+        page.navigate(lab.baseUrl() + "/network");
+        page.getByRole(
+                AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName("Requisição bloqueável"))
+                .click();
+
+        assertThat(page.getByTestId("result")).hasText("blocked:erro");
+
+        List<String> errors = new CopyOnWriteArrayList<>();
+        page.onPageError(errors::add);
+        page.setContent("""
+                <button onclick="setTimeout(() => {
+                  document.querySelector('p').textContent='executado';
+                  throw new Error('falha controlada');
+                }, 0)">Executar</button>
+                <p data-test="state"></p>
+                """);
+
+        page.getByText("Executar").click();
+        assertThat(page.getByTestId("state")).hasText("executado");
+
+        page.waitForCondition(() -> errors.stream().anyMatch(value ->
+                value.contains("falha controlada")));
+
+        assertTrue(errors.stream().anyMatch(value ->
+                value.contains("falha controlada")));
+    }
 }

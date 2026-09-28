@@ -1,59 +1,66 @@
-# Aula 5 — Carrinho, checkout e jornadas de negócio
+# Aula 5 - Carrinho, checkout e jornadas de negocio
 
-Tempo sugerido: 5–6 horas. Pré-requisito: Aula 4.
+Tempo sugerido: 5 a 6 horas.  
+Pre-requisito: Aula 4 concluida.
 
 ## Objetivos
 
-Modelar uma jornada sem criar um teste monolítico, preparar dados de forma
-legível, verificar estado em cada transição e calcular valores monetários.
+Ao terminar esta aula, voce devera conseguir:
 
-## 1. Uma jornada é uma sequência de contratos
+- modelar uma jornada sem criar um teste monolitico;
+- preparar dados de forma legivel;
+- verificar o estado em cada transicao relevante;
+- selecionar produtos pelo dominio, sem depender da posicao;
+- representar dados relacionados com `record`;
+- calcular e comparar valores monetarios com `BigDecimal`;
+- manter cenarios positivos e negativos independentes.
 
-O teste de compra não deve apenas clicar até “Complete”. Observe os contratos:
+## 1. Uma jornada e uma sequencia de contratos
+
+O teste de compra nao deve apenas clicar ate a conclusao. Cada etapa possui um estado observavel:
 
 ```text
-inventário -> produto adicionado e badge = 1
-carrinho   -> item, quantidade e preço corretos
-checkout   -> dados obrigatórios aceitos
+inventario -> produto adicionado e badge atualizado
+carrinho   -> item, quantidade e preco corretos
+checkout   -> dados obrigatorios aceitos
 resumo     -> subtotal + imposto = total
-conclusão  -> confirmação visível
+conclusao  -> confirmacao visivel
 ```
 
-Verificações intermediárias localizam a origem da falha. Entretanto, não
-transforme um teste em dezenas de detalhes cosméticos. Valide o estado que
-protege a regra de negócio.
+Assertions intermediarias ajudam a localizar a origem da falha. Entretanto, nao valide detalhes cosmeticos sem valor para a regra de negocio.
 
-No Selenium é comum uma cadeia de `click()` seguida de uma verificação final.
-O Playwright facilita assertions web-first em cada fronteira, mas a escolha do
-oráculo continua sendo responsabilidade do testador.
+O Playwright oferece assertions web-first em cada fronteira, mas a escolha do que deve ser validado continua sendo responsabilidade do testador.
 
-## 2. Independência e dados
+## 2. Independencia e dados
 
-Cada teste inicia com contexto novo e constrói seu próprio estado. Não use
-`@Order`, não reutilize carrinho de outro caso e não dependa de um “teste de
-login”. Métodos auxiliares podem reduzir ruído nesta etapa; Page Objects entram
-na Aula 7.
+Cada teste recebe um novo `BrowserContext` e constroi o proprio estado. Portanto:
 
-Represente os dados do comprador com um record:
+- nao utilize `@Order`;
+- nao reutilize o carrinho criado por outro teste;
+- nao dependa de um teste anterior para realizar login;
+- nao compartilhe `Page` entre testes.
+
+Metodos auxiliares privados podem reduzir repeticao nesta etapa. Page Objects serao introduzidos somente na Aula 7.
+
+Represente os dados do comprador com um `record`:
 
 ```java
-record Customer(String firstName, String lastName, String postalCode) {}
+record Customer(String firstName, String lastName, String postalCode) { }
 ```
 
-Não coloque credenciais reais no código. As credenciais do SauceDemo são
-públicas e didáticas; Jenkins Credentials será usado para segredos reais.
+As credenciais do SauceDemo sao publicas e utilizadas somente para fins didaticos. Credenciais reais nao devem ser armazenadas no codigo.
 
-## 3. Valores monetários
+## 3. Valores monetarios
 
-Extraia `Item total: $29.99`, mantenha apenas a parte numérica e converta para
-`BigDecimal`. Calcule `subtotal.add(tax)` e compare com o total. Prefira
-`compareTo` ou normalize a escala, pois `29.9` e `29.90` têm valores iguais e
-escalas diferentes.
+O SauceDemo apresenta valores como:
 
-### Conversão e comparação, passo a passo
+```text
+Item total: $39.98
+Tax: $3.20
+Total: $43.18
+```
 
-O SauceDemo apresenta rótulos como `Item total: $39.98`. O objeto observado é
-texto; a regra de negócio usa números:
+Converta os textos para `BigDecimal`:
 
 ```java
 private static BigDecimal dinheiro(String rotulo) {
@@ -62,25 +69,29 @@ private static BigDecimal dinheiro(String rotulo) {
 }
 ```
 
+Depois, calcule o total esperado:
+
 ```java
-BigDecimal subtotal = dinheiro(page.getByTestId("subtotal-label").textContent());
-BigDecimal imposto = dinheiro(page.getByTestId("tax-label").textContent());
-BigDecimal total = dinheiro(page.getByTestId("total-label").textContent());
+BigDecimal subtotal = dinheiro(
+    page.getByTestId("subtotal-label").textContent());
+BigDecimal imposto = dinheiro(
+    page.getByTestId("tax-label").textContent());
+BigDecimal total = dinheiro(
+    page.getByTestId("total-label").textContent());
 
 assertEquals(0, subtotal.add(imposto).compareTo(total));
 ```
 
-`compareTo` devolve zero quando os valores numéricos são iguais, mesmo se as
-escalas forem diferentes. Não compare textos e não use `double` para dinheiro.
+Utilize `compareTo` porque valores como `29.9` e `29.90` sao numericamente iguais, embora possuam escalas diferentes. Nao compare os textos e nao utilize `double` para valores monetarios.
 
-## 4. Como escolher um produto pelo domínio
+## 4. Como escolher um produto pelo dominio
 
-Existem vários botões “Add to cart”. Comece pelo item que contém o nome e só
-depois procure o botão dentro dele:
+Existem varios botoes chamados `Add to cart`. Primeiro localize o item pelo nome e depois procure o botao dentro dele:
 
 ```java
 Locator item = page.getByTestId("inventory-item")
-    .filter(new Locator.FilterOptions().setHasText("Sauce Labs Backpack"));
+    .filter(new Locator.FilterOptions()
+        .setHasText("Sauce Labs Backpack"));
 
 item.getByRole(
     AriaRole.BUTTON,
@@ -88,121 +99,185 @@ item.getByRole(
     .click();
 ```
 
-Esse padrão não depende da posição do produto. Transforme-o em um método
-auxiliar privado nesta aula; Page Objects só serão introduzidos na Aula 7.
+Esse locator nao depende da posicao do produto. Nesta aula, ele pode ser encapsulado em um metodo auxiliar privado.
 
 ## 5. Mapa da jornada de checkout
 
-| Estado ou ação | Test ID |
+| Estado ou acao | Test ID |
 |---|---|
-| link do carrinho | `shopping-cart-link` |
-| badge | `shopping-cart-badge` |
-| itens do carrinho | `inventory-item` |
-| iniciar checkout | `checkout` |
-| primeiro nome | `firstName` |
-| sobrenome | `lastName` |
+| Link do carrinho | `shopping-cart-link` |
+| Badge do carrinho | `shopping-cart-badge` |
+| Itens do carrinho | `inventory-item` |
+| Iniciar checkout | `checkout` |
+| Primeiro nome | `firstName` |
+| Sobrenome | `lastName` |
 | CEP | `postalCode` |
-| continuar | `continue` |
-| subtotal | `subtotal-label` |
-| imposto | `tax-label` |
-| total | `total-label` |
-| finalizar | `finish` |
-| confirmação | `complete-header` |
+| Continuar | `continue` |
+| Subtotal | `subtotal-label` |
+| Imposto | `tax-label` |
+| Total | `total-label` |
+| Finalizar | `finish` |
+| Confirmacao | `complete-header` |
 
-Exemplo de uma transição observável:
+Exemplo de transicao observavel:
 
 ```java
 adicionarProduto("Sauce Labs Backpack");
 assertThat(page.getByTestId("shopping-cart-badge")).hasText("1");
+
 page.getByTestId("shopping-cart-link").click();
 assertThat(page.getByTestId("inventory-item")).hasCount(1);
 ```
 
-O clique é uma ação; badge e conteúdo são oráculos. Sem assertions
-intermediárias, uma falha ao adicionar apareceria apenas no fim do checkout.
+O clique representa a acao. O badge e o conteudo do carrinho representam evidencias do resultado.
 
 ## 6. Dados do comprador e testes negativos
 
-Um `record` agrupa valores que viajam juntos:
+Um `record` agrupa valores relacionados:
 
 ```java
-record Customer(String firstName, String lastName, String postalCode) {}
-
 Customer customer = new Customer("Ada", "Lovelace", "01000-000");
+
 page.getByTestId("firstName").fill(customer.firstName());
 page.getByTestId("lastName").fill(customer.lastName());
 page.getByTestId("postalCode").fill(customer.postalCode());
 ```
 
-Para obrigatoriedade, cada caso pode fornecer os valores e a mensagem:
+Os campos obrigatorios podem ser validados com um teste parametrizado:
 
 ```java
 static Stream<Arguments> camposObrigatorios() {
   return Stream.of(
       Arguments.of("", "Lovelace", "01000-000", "First Name is required"),
       Arguments.of("Ada", "", "01000-000", "Last Name is required"),
-      Arguments.of("Ada", "Lovelace", "", "Postal Code is required"));
+      Arguments.of("Ada", "Lovelace", "", "Postal Code is required")
+  );
 }
 ```
 
-O corpo preenche os três dados, clica em `continue` e verifica o test ID
-`error`. Como mecânica e tipo de resultado são iguais, não é necessário `if`.
+O corpo do teste deve preencher os tres campos, clicar em `continue` e validar o test ID `error`. Como a mecanica e o tipo de resultado permanecem iguais, nao e necessario utilizar condicionais.
 
-## 7. Demonstração e exercício guiado
+## 7. Demonstracao executavel
 
-Execute a demonstração e implemente `CheckoutExercicioTest`:
+Leia antes de executar:
+
+`src/test/java/br/com/curso/playwright/aula05/CheckoutEDinheiroDemonstracao.java`
+
+Identifique:
+
+- como o produto e localizado pelo nome;
+- qual assertion comprova a transicao;
+- por que valores monetarios sao convertidos para `BigDecimal`;
+- como a configuracao de execucao e obtida por `TestConfig` e `BrowserFactory`.
+
+Execute com o Microsoft Edge visivel:
 
 ```powershell
 .\course.ps1 demo 05
 ```
 
-Antes de programar, abra `CheckoutEDinheiroDemonstracao.java` e identifique
-onde o produto é limitado pelo nome, qual assertion comprova a transição e por
-que valores monetários deixam de ser texto.
+Execute sem exibir o navegador:
 
-1. login do usuário padrão;
-2. adicione Backpack e Bike Light pelo escopo do item;
-3. confira badge `2` e conteúdo do carrinho;
-4. remova um item e confira badge e ausência;
-5. preencha checkout com um objeto de dados;
-6. valide subtotal, imposto e total;
-7. conclua e verifique `Thank you for your order!`.
+```powershell
+.\course.ps1 demo 05 -Headless
+```
 
-Crie também testes negativos independentes para first name, last name e postal
-code obrigatórios. Use parametrização somente se o nome do campo e a mensagem
-esperada permanecerem claros.
+## 8. Exercicio guiado
 
-Implemente em checkpoints: login e badge `2`; carrinho com dois itens; remoção
-e badge `1`; identificação; cálculo do resumo; conclusão; três variações
-negativas. Execute `exercise 05` depois de cada checkpoint.
+Implemente:
 
-### Desafio independente
+`src/test/java/br/com/curso/playwright/aula05/CheckoutExercicioTest.java`
 
-Prove que voltar do carrinho ao catálogo preserva o badge dentro do mesmo
-contexto e que um novo teste começa com carrinho vazio. Explique por que isso
-não é contradição: persistência de jornada e isolamento de teste têm escopos
-diferentes.
+Remova `@Disabled` quando iniciar a implementacao.
 
-## Validação e rubrica
+### Jornada positiva
+
+Implemente os seguintes checkpoints:
+
+1. realize login com `standard_user`;
+2. adicione `Sauce Labs Backpack` e `Sauce Labs Bike Light`;
+3. valide o badge com valor `2`;
+4. abra o carrinho e confirme os dois produtos;
+5. remova um produto;
+6. valide o badge com valor `1` e a ausencia do produto removido;
+7. inicie o checkout;
+8. preencha os dados com um objeto `Customer`;
+9. valide subtotal, imposto e total;
+10. finalize a compra;
+11. valide a mensagem `Thank you for your order!`.
+
+### Cenarios negativos
+
+Crie variacoes independentes para:
+
+- primeiro nome obrigatorio;
+- sobrenome obrigatorio;
+- CEP obrigatorio.
+
+Utilize parametrizacao porque a mecanica e o tipo de resultado sao iguais. Cada invocacao deve preparar seu proprio carrinho e checkout.
+
+Execute durante o desenvolvimento com o Edge visivel:
+
+```powershell
+.\course.ps1 exercise 05
+```
+
+Para executar sem exibir o navegador:
+
+```powershell
+.\course.ps1 exercise 05 -Headless
+```
+
+Quando a implementacao estiver concluida:
 
 ```powershell
 .\course.ps1 validate 05
 ```
 
-- [ ] Há assertions nas transições relevantes.
-- [ ] Produtos são escolhidos pelo domínio, não por posição.
-- [ ] Dinheiro usa `BigDecimal` e total é recalculado.
-- [ ] Cenários negativos não dependem do positivo.
-- [ ] Falhar no carrinho produz diagnóstico diferente de falhar na conclusão.
+## 9. Desafio independente
 
-Perguntas: qual é o menor conjunto de cenários do checkout? Quando uma jornada
-E2E deve ser dividida? O que pertence ao dado e o que pertence à ação?
+Prove que:
 
-Erros comuns: `strict mode violation` indica botão sem escopo; total divergente
-geralmente indica texto não convertido ou item diferente; badge ausente depois
-de remover o último item é comportamento válido, não texto `0`.
+- voltar do carrinho ao catalogo preserva o badge dentro do mesmo contexto;
+- um novo teste comeca com o carrinho vazio.
 
-Leituras: [isolamento](https://playwright.dev/java/docs/browser-contexts) e
-[boas práticas](https://playwright.dev/java/docs/best-practices).
+Isso nao representa contradicao. A persistencia da jornada ocorre dentro do mesmo contexto, enquanto o isolamento cria um contexto novo para cada teste.
 
-Solução após a autoavaliação: `.\course.ps1 solution 05`.
+## 10. Erros comuns
+
+- `strict mode violation`: o botao foi localizado sem limitar o escopo ao produto;
+- total divergente: algum valor nao foi convertido corretamente ou o carrinho possui itens diferentes dos esperados;
+- badge ausente depois de remover o ultimo item: esse e o comportamento esperado do SauceDemo, nao deve ser validado como texto `0`;
+- estado vazando entre testes: o contexto nao esta sendo recriado ou fechado corretamente;
+- teste negativo dependente do positivo: cada invocacao deve preparar seu proprio estado;
+- execucao sempre visivel: a demonstracao fixou `.setHeadless(false)` em vez de utilizar `TestConfig` e `BrowserFactory`.
+
+## 11. Rubrica e reflexao
+
+- [ ] Existem assertions nas transicoes relevantes.
+- [ ] Os produtos sao escolhidos pelo dominio, nao pela posicao.
+- [ ] Valores monetarios utilizam `BigDecimal`.
+- [ ] O total e recalculado pelo teste.
+- [ ] Os cenarios negativos nao dependem da jornada positiva.
+- [ ] Cada teste e cada invocacao parametrizada recebem um contexto novo.
+- [ ] Nao existem esperas fixas, `force=true` ou dependencia de ordem.
+- [ ] Uma falha no carrinho apresenta diagnostico diferente de uma falha na conclusao.
+
+Perguntas finais:
+
+1. Qual e o menor conjunto de cenarios necessario para cobrir o checkout?
+2. Quando uma jornada E2E deve ser dividida?
+3. O que pertence aos dados e o que pertence as acoes?
+4. Quais assertions intermediarias realmente protegem regras de negocio?
+5. Por que um novo contexto deve iniciar com o carrinho vazio?
+
+Consulte a solucao somente depois da autoavaliacao:
+
+```powershell
+.\course.ps1 solution 05
+```
+
+## Leituras oficiais
+
+- [Isolamento por BrowserContext](https://playwright.dev/java/docs/browser-contexts)
+- [Boas praticas do Playwright](https://playwright.dev/java/docs/best-practices)

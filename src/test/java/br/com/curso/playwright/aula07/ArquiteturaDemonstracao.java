@@ -12,11 +12,18 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 @PlaywrightTest
 @Tag("demo-07")
 class ArquiteturaDemonstracao {
+
     @Test
     void testeExpressaRegraEObjetoEncapsulaMecanica(Page page) {
-        page.setContent("<main><h1>Login</h1><label>Usuário <input></label><button>Entrar</button><p data-test='state'></p><script>document.querySelector('button').onclick=()=>document.querySelector('[data-test=state]').textContent='Autenticado'</script></main>");
+        page.setContent("<main><h1>Login</h1><label>Usuario <input></label>"
+                + "<button>Entrar</button><p data-test='state'></p>"
+                + "<script>document.querySelector('button').onclick=() => "
+                + "document.querySelector('[data-test=state]').textContent='Autenticado'"
+                + "</script></main>");
+
         LoginPanel login = new LoginPanel(page);
         login.loginAs("student");
+
         assertThat(login.state()).hasText("Autenticado");
     }
 
@@ -28,8 +35,11 @@ class ArquiteturaDemonstracao {
         }
 
         void loginAs(String user) {
-            page.getByLabel("Usuário").fill(user);
-            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Entrar")).click();
+            page.getByLabel("Usuario").fill(user);
+            page.getByRole(
+                    AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("Entrar"))
+                    .click();
         }
 
         Locator state() {

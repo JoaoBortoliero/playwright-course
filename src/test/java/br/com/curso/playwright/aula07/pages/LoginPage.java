@@ -4,7 +4,7 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 
 /**
- * Starter do aluno: implemente operações; mantenha assertions fora daqui.
+ * Starter do aluno: implemente operacoes e mantenha assertions fora daqui.
  */
 public final class LoginPage {
     private final Page page;
